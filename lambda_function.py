@@ -1,40 +1,33 @@
 import boto3
 import pandas as pd
+import pymysql
 import io
 import os
-from dotenv import load_dotenv
-import pymysql
-
-load_dotenv()
 
 def lambda_handler(event, context):
     s3 = boto3.client('s3')
 
-    # get the uploaded file
+    # get uploaded file from S3
     raw_bucket = event['Records'][0]['s3']['bucket']['name']
     raw_key = event['Records'][0]['s3']['object']['key']
     response = s3.get_object(Bucket=raw_bucket, Key=raw_key)
     body = response['Body'].read().decode('utf-8')
     df = pd.read_csv(io.StringIO(body))
 
+    # clean and preprocess
     df = df.loc[:, ~df.columns.str.contains('^Unnamed')]
     df = df[['Stock', 'Returns_in_portfolio', 'Weights']]
-
-    # calculate weighted return
     df['Weighted Return'] = df['Returns_in_portfolio'] * df['Weights']
-
-    # calculate total portfolio return
     total_return = df['Weighted Return'].sum()
-
-    # add "Return"
     df['Total Portfolio Return'] = total_return
-    df = df.fillna(0)
+    df = df.where(pd.notnull(df), None)
 
+    # connect to RDS
     connection = pymysql.connect(
-        host=os.getenv['RDS_HOST'],
-        user=os.getenv['RDS_USER'],
-        password=os.getenv['RDS_PASSWORD'],
-        database=os.getenv['DATABASE'],
+        host=os.environ['RDS_HOST'],
+        user=os.environ['RDS_USER'],
+        password=os.environ['RDS_PASSWORD'],
+        database=os.environ['DATABASE'],
         port=3306,
         cursorclass=pymysql.cursors.DictCursor
     )
@@ -59,15 +52,27 @@ def lambda_handler(event, context):
                     row['Total Portfolio Return']
                 ))
         connection.commit()
+
+        # get the updated rows
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT Stock, Returns_in_portfolio, Weights, `Weighted Return`, `Total Portfolio Return` FROM holdings;")
+            rows = cursor.fetchall()
+
     finally:
         connection.close()
 
-    # save processed file back to S3
-    processed_csv = df.to_csv(index=False)
+    # build dataframe manually
+    holdings_df = pd.DataFrame(rows)
+
+    # save the updated holdings to S3
+    holdings_csv = holdings_df.to_csv(index=False)
     s3.put_object(
-        Bucket=os.getenv['PROCESSED_BUCKET'],
-        Key=raw_key.replace("uploads/", "processed/"),
-        Body=processed_csv.encode('utf-8')
+        Bucket=os.environ['PROCESSED_BUCKET'],
+        Key="processed/latest_holdings.csv",
+        Body=holdings_csv.encode('utf-8')
     )
 
-    return {"statusCode": 200, "body": "File processed and saved successfully."}
+    return {
+        "statusCode": 200,
+        "body": "File processed, RDS updated, and latest holdings saved to S3 correctly."
+    }
