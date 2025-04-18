@@ -42,10 +42,12 @@ def show_portfolio_optimization(user_stocks):
     user_stocks = pd.Series(user_stocks).dropna().tolist()
     user_stocks = [t.strip().upper() for t in user_stocks]
 
-    data = yf.download(user_stocks, period="1y")["Close"]
-    if data.empty or data.isnull().all().all():
-        st.error("No stock data available for optimization. Please check the stock tickers.")
+    try:
+        data = yf.download(user_stocks, period="1y", threads=False, progress=False)["Close"]
+    except Exception as e:
+        st.error(f"Failed to download stock data: {e}")
         return
+
 
     returns = expected_returns.mean_historical_return(data)
     cov_matrix = risk_models.sample_cov(data)
