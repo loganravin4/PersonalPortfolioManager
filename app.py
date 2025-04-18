@@ -35,8 +35,9 @@ if st.button("Load Latest Portfolio Visualizations"):
 
     st.header("Advanced Stock Insights")
     ticker = st.text_input("Enter a stock ticker to view candlestick chart (e.g., AAPL):")
-    if ticker:
-        show_stock_chart(ticker.strip().upper())
+    if st.button("Generate Chart") and ticker:
+        show_stock_chart(ticker)
+
 
     st.header("Optimized Portfolio Allocation")
     user_data = show_basic_graphs(return_data=True)

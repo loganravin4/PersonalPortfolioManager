@@ -43,6 +43,9 @@ def show_portfolio_optimization(user_stocks):
     user_stocks = [t.strip().upper() for t in user_stocks]
 
     data = yf.download(user_stocks, period="1y")["Close"]
+    if data.empty or data.isnull().all().all():
+        st.error("No stock data available for optimization. Please check the stock tickers.")
+        return
 
     returns = expected_returns.mean_historical_return(data)
     cov_matrix = risk_models.sample_cov(data)
