@@ -4,7 +4,7 @@ import uuid
 import os
 from dotenv import load_dotenv
 from graphs import show_basic_graphs
-from advanced_graphs import show_stock_charts, show_portfolio_optimization
+from advanced_graphs import show_portfolio_optimization
 
 load_dotenv()
 
@@ -34,8 +34,6 @@ if st.button("Load Latest Portfolio Visualizations"):
     show_basic_graphs()
 
     st.header("Advanced Stock Insights")
-    show_stock_charts()
-
     st.header("Optimized Portfolio Allocation")
     user_data = show_basic_graphs(return_data=True)
     if user_data is not None:

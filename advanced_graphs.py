@@ -26,47 +26,6 @@ def load_user_data():
     user_data = pd.read_csv(io.StringIO(content))
     return user_data
 
-def show_stock_charts():
-    user_data = load_user_data()
-    stocks = user_data['Stock'].dropna().tolist()
-
-    if not stocks:
-        st.warning("No stocks found in uploaded portfolio.")
-        return
-
-    st.subheader("Candlestick Charts for Your Stocks")
-
-    cols = st.columns(len(stocks))
-
-    for i, ticker in enumerate(stocks):
-        with cols[i]:
-            try:
-                stock_data = yf.download(ticker, start="2024-04-16", end="2025-04-16", progress=False, threads=False)
-
-                if stock_data.empty:
-                    st.warning(f"No data for {ticker}")
-                    continue
-
-                if isinstance(stock_data.columns, pd.MultiIndex):
-                    stock_data.columns = stock_data.columns.droplevel(0)
-
-                expected_cols = ["Open", "High", "Low", "Close"]
-                if not all(col in stock_data.columns for col in expected_cols):
-                    st.warning(f"Missing OHLC data for {ticker}")
-                    continue
-
-                stock_data = stock_data.dropna(subset=expected_cols)
-
-                if stock_data.empty:
-                    st.warning(f"No valid OHLC data after cleaning for {ticker}")
-                else:
-                    fig, ax = plt.subplots()
-                    mpf.plot(stock_data, type="candle", volume=False, show_nontrading=True, ax=ax, style="yahoo")
-                    st.pyplot(fig)
-
-            except Exception as e:
-                st.error(f"Error with {ticker}: {e}")
-
 def show_portfolio_optimization(user_stocks):
     user_stocks = pd.Series(user_stocks).dropna().tolist()
     user_stocks = [t.strip().upper() for t in user_stocks]
