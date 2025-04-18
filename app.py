@@ -4,7 +4,7 @@ import uuid
 import os
 from dotenv import load_dotenv
 from graphs import show_basic_graphs
-from advanced_graphs import show_stock_chart, show_portfolio_optimization
+from advanced_graphs import show_stock_charts, show_portfolio_optimization
 
 load_dotenv()
 
@@ -34,10 +34,7 @@ if st.button("Load Latest Portfolio Visualizations"):
     show_basic_graphs()
 
     st.header("Advanced Stock Insights")
-    ticker = st.text_input("Enter a stock ticker to view candlestick chart (e.g., AAPL):")
-    if st.button("Generate Chart") and ticker:
-        show_stock_chart(ticker)
-
+    show_stock_charts()
 
     st.header("Optimized Portfolio Allocation")
     user_data = show_basic_graphs(return_data=True)
