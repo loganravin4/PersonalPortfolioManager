@@ -45,28 +45,36 @@ def show_portfolio_optimization(user_stocks):
     try:
         data = yf.download(user_stocks, period="1y", threads=False, progress=False)["Close"]
     except Exception as e:
-        st.error(f"Failed to download stock data: {e}")
+        st.error(f"Error fetching stock data: {e}")
         return
 
+    if data.empty:
+        st.error("Failed to download stock data. Please check tickers or try again later.")
+        return
 
-    returns = expected_returns.mean_historical_return(data)
-    cov_matrix = risk_models.sample_cov(data)
+    try:
+        returns = expected_returns.mean_historical_return(data)
+        cov_matrix = risk_models.sample_cov(data)
 
-    ef = EfficientFrontier(returns, cov_matrix)
-    weights = ef.max_sharpe()
-    cleaned_weights = ef.clean_weights()
+        if returns.isnull().all():
+            st.error("No valid return data available for the selected stocks.")
+            return
 
-    weights_df = pd.DataFrame.from_dict(cleaned_weights, orient='index', columns=['Weight'])
-    st.subheader("Optimized Portfolio Weights Table")
-    st.dataframe(weights_df)
+        ef = EfficientFrontier(returns, cov_matrix)
+        weights = ef.max_sharpe()
+        cleaned_weights = ef.clean_weights()
 
+        st.subheader("Optimized Portfolio Weights")
+        st.write(cleaned_weights)
 
-    st.subheader("Optimized Portfolio Weights")
-    st.write(cleaned_weights)
+        weights_df = pd.DataFrame.from_dict(cleaned_weights, orient='index', columns=['Weight'])
 
-    fig, ax = plt.subplots()
-    ax.bar(cleaned_weights.keys(), cleaned_weights.values())
-    ax.set_ylabel("Weight")
-    ax.set_xlabel("Stock")
-    ax.set_title("Optimized Portfolio Weights")
-    st.pyplot(fig)
+        fig, ax = plt.subplots()
+        ax.bar(weights_df.index, weights_df['Weight'])
+        ax.set_ylabel("Weight")
+        ax.set_xlabel("Stock")
+        ax.set_title("Optimized Portfolio Weights")
+        st.pyplot(fig)
+
+    except Exception as e:
+        st.error(f"Portfolio optimization failed: {e}")
