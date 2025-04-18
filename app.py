@@ -27,7 +27,7 @@ if uploaded_file is not None:
     s3.upload_fileobj(
         uploaded_file, RAW_BUCKET, f"uploads/{file_id}.csv"
     )
-    st.success("File uploaded successfully! Processing... Please wait a few seconds then refresh 🔄")
+    st.success("File uploaded successfully! Processing... Please wait a few seconds then refresh")
 
 if st.button("Load Latest Portfolio Visualizations"):
     st.header("Basic Portfolio Visualizations")
